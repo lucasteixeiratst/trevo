@@ -1,0 +1,401 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Medidor de Energia</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .disco-container {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0 20px 0;
+        }
+
+        .disco {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: conic-gradient(#3498db, #9b59b6, #e74c3c, #f1c40f);
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2), 
+                        0 0 30px rgba(0, 0, 0, 0.1) inset;
+        }
+
+        .ponteiro {
+            position: absolute;
+            width: 4px;
+            height: 90px;
+            background-color: black;
+            top: 10px;
+            left: 50%;
+            transform-origin: bottom;
+            transform: rotate(0deg);
+            border-radius: 2px;
+        }
+
+        input, select, button {
+            margin: 8px 0;
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        button {
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .start {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .start:hover {
+            background-color: #218838;
+        }
+
+        .stop {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .stop:hover {
+            background-color: #c82333;
+        }
+
+        #popup {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        #popup p, #popup ul {
+            text-align: left;
+            margin: 0 0 10px;
+        }
+
+        .help-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .help-button:hover {
+            background-color: #0056b3;
+        }
+
+        #error-percentage-result {
+            color: black;
+        }
+
+        .error-high {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <button class="help-button" onclick="togglePopup()">?</button>
+
+        <div id="popup">
+            <p><strong>Instruções:</strong></p>
+            <ul>
+                <li>Selecione o tipo de medidor (Monofásico, Bifásico ou Trifásico).</li>
+                <li>Preencha <strong>Tensão (V)</strong>, <strong>Corrente(s) (A)</strong>, <strong>Kd (Wh/volta)</strong>, <strong>Nº Voltas</strong> e <strong>Tempo (s)</strong>.</li>
+                <li>Clique em <strong>"Iniciar Disco"</strong> para simular a rotação.</li>
+                <li>Use o <strong>"Temporizador"</strong> para cronometrar o tempo.</li>
+                <li>Verifique os resultados com <strong>"Calcular"</strong>.</li>
+                <li>Use <strong>"Parar Disco"</strong> para interromper a animação.</li>
+            </ul>
+            <button class="help-button" onclick="togglePopup()">×</button>
+        </div>
+
+        <h1>SIMULADOR DE MEDIDOR DE ENERGIA</h1>
+
+        <div class="disco-container">
+            <div class="disco" id="disco">
+                <div class="ponteiro" id="ponteiro"></div>
+            </div>
+        </div>
+
+        <form id="calculation-form">
+            <select id="medidor" onchange="updateInputs()">
+                <option value="mono">Monofásico</option>
+                <option value="bifasico">Bifásico</option>
+                <option value="trifasico">Trifásico</option>
+            </select>
+
+            <input type="number" id="volts" placeholder="Tensão (V)" step="0.1" required>
+            <input type="number" id="current" placeholder="Corrente (I1)" step="0.1" required>
+            <div id="additional-currents"></div>
+
+            <input type="number" id="turns" placeholder="Nº Voltas" step="1" required>
+            <input type="number" id="kd" placeholder="Kd (Wh/volta)" step="0.01" required>
+            <input type="number" id="time" placeholder="Tempo (s)" step="1" required>
+
+            <button type="button" class="start" onclick="startStopTimer()">Temporizador</button>
+            <button type="button" class="start" onclick="startDisco()">Iniciar Disco</button>
+            <button type="button" class="stop" onclick="stopDisco()">Parar Disco</button>
+            <button type="button" class="stop" onclick="calculate()">Calcular</button>
+        </form>
+
+        <div id="results">
+            <h2>Resultados</h2>
+            <p><strong>VA:</strong> <span id="va-result"></span></p>
+            <p><strong>Watts:</strong> <span id="watt-result"></span></p>
+            <p><strong>Fator de Potência:</strong> <span id="pf-result"></span></p>
+            <p><strong>Erro:</strong> <span id="error-percentage-result"></span></p>
+        </div>
+    </div>
+
+    <script>
+        let startTime, timerInterval, animationFrame;
+        let tempoPorVolta, rotation = 0;
+
+        function togglePopup() {
+            const popup = document.getElementById('popup');
+            popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+        }
+
+        const ponteiro = document.getElementById('ponteiro');
+
+        function startStopTimer() {
+            const timeInput = document.getElementById('time');
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                const elapsed = Math.floor((new Date() - startTime) / 1000);
+                timeInput.value = elapsed;
+                timerInterval = null;
+            } else {
+                startTime = new Date();
+                timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((new Date() - startTime) / 1000);
+                    timeInput.value = elapsed;
+                }, 1000);
+            }
+        }
+
+        function calculate() {
+            const volts = parseFloat(document.getElementById('volts').value);
+            let current = parseFloat(document.getElementById('current').value);
+            const medidor = document.getElementById('medidor').value;
+            const kd = parseFloat(document.getElementById('kd').value);
+            const turns = parseFloat(document.getElementById('turns').value);
+            const time = parseFloat(document.getElementById('time').value);
+
+            // Validação de entradas
+            if (isNaN(volts) || isNaN(current) || isNaN(kd) || isNaN(turns) || isNaN(time)) {
+                alert("Preencha todos os campos corretamente!");
+                return;
+            }
+            if (medidor === 'bifasico' && isNaN(parseFloat(document.getElementById('current2').value))) {
+                alert("Preencha a corrente I2 para o modo bifásico!");
+                return;
+            }
+            if (medidor === 'trifasico' && (isNaN(parseFloat(document.getElementById('current2').value)) || 
+                                            isNaN(parseFloat(document.getElementById('current3').value)))) {
+                alert("Preencha as correntes I2 e I3 para o modo trifásico!");
+                return;
+            }
+
+            // Cálculo da potência aparente (VA)
+            let va;
+            if (medidor === 'bifasico') {
+                const current2 = parseFloat(document.getElementById('current2').value);
+                va = volts * (current + current2);
+            } else if (medidor === 'trifasico') {
+                const current2 = parseFloat(document.getElementById('current2').value);
+                const current3 = parseFloat(document.getElementById('current3').value);
+                va = Math.sqrt(3) * volts * (current + current2 + current3);
+            } else {
+                va = volts * current;
+            }
+
+            // Cálculo da potência ativa (W)
+            const watts = (turns * kd) / (time / 3600);
+
+            // Cálculo da energia esperada e registrada (kWh)
+            const energiaEsperada = (va * time) / 3600000; // VA * s / (3600 * 1000) = kWh
+            const energiaRegistrada = (turns * kd) / 1000; // Wh / 1000 = kWh
+
+            // Cálculo do fator de potência
+            const pf = Math.min(Math.max(watts / va, 0), 1);
+
+            // Cálculo do erro percentual
+            const errorPercentage = ((Math.abs(energiaRegistrada - energiaEsperada) / energiaEsperada) * 100).toFixed(2);
+
+            // Exibição dos resultados
+            document.getElementById('va-result').innerText = va.toFixed(0) + ' VA';
+            document.getElementById('watt-result').innerText = watts.toFixed(0) + ' W';
+            document.getElementById('pf-result').innerText = pf.toFixed(3);
+            document.getElementById('error-percentage-result').innerText = errorPercentage + '%';
+
+            // Destacar erro alto
+            const errorElement = document.getElementById('error-percentage-result');
+            if (parseFloat(errorPercentage) > 2) {
+                errorElement.classList.add('error-high');
+            } else {
+                errorElement.classList.remove('error-high');
+            }
+        }
+
+        function animateDisco() {
+            const elapsedTime = (Date.now() - startTime) / 1000;
+            rotation = -(360 * elapsedTime * 1000) / tempoPorVolta; // Rotação no sentido anti-horário
+            ponteiro.style.transform = `rotate(${rotation}deg)`;
+            animationFrame = requestAnimationFrame(animateDisco);
+        }
+
+        function startDisco() {
+            const volts = parseFloat(document.getElementById('volts').value);
+            let current = parseFloat(document.getElementById('current').value);
+            const kd = parseFloat(document.getElementById('kd').value);
+            const medidor = document.getElementById('medidor').value;
+
+            // Validação de entradas
+            if (isNaN(volts) || isNaN(current) || isNaN(kd)) {
+                alert("Preencha Tensão, Corrente e Kd corretamente!");
+                return;
+            }
+            if (medidor === 'bifasico' && isNaN(parseFloat(document.getElementById('current2').value))) {
+                alert("Preencha a corrente I2 para o modo bifásico!");
+                return;
+            }
+            if (medidor === 'trifasico' && (isNaN(parseFloat(document.getElementById('current2').value)) || 
+                                            isNaN(parseFloat(document.getElementById('current3').value)))) {
+                alert("Preencha as correntes I2 e I3 para o modo trifásico!");
+                return;
+            }
+
+            // Cálculo da potência (kW)
+            let kw;
+            if (medidor === 'bifasico') {
+                const current2 = parseFloat(document.getElementById('current2').value);
+                kw = (volts * (current + current2)) / 1000;
+            } else if (medidor === 'trifasico') {
+                const current2 = parseFloat(document.getElementById('current2').value);
+                const current3 = parseFloat(document.getElementById('current3').value);
+                kw = (Math.sqrt(3) * volts * (current + current2 + current3)) / 1000;
+            } else {
+                kw = (volts * current) / 1000;
+            }
+
+            if (kw === 0) {
+                alert("A potência calculada é zero! Verifique os valores inseridos.");
+                return;
+            }
+
+            tempoPorVolta = (3600 * kd) / kw;
+            startTime = Date.now();
+            animateDisco();
+        }
+
+        function stopDisco() {
+            cancelAnimationFrame(animationFrame);
+        }
+
+        function updateInputs() {
+            const medidor = document.getElementById('medidor').value;
+            const additionalCurrents = document.getElementById('additional-currents');
+            additionalCurrents.innerHTML = '';
+            if (medidor === 'bifasico') {
+                additionalCurrents.innerHTML = `<input type="number" id="current2" placeholder="Corrente (I2)" step="0.1" required>`;
+            } else if (medidor === 'trifasico') {
+                additionalCurrents.innerHTML = `
+                    <input type="number" id="current2" placeholder="Corrente (I2)" step="0.1" required>
+                    <input type="number" id="current3" placeholder="Corrente (I3)" step="0.1" required>`;
+            }
+        }
+    </script>
+
+</body>
+</html>
