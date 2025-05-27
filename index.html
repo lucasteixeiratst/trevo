@@ -1,401 +1,303 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
-<html lang="pt">
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Medidor de Energia</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .container {
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-            background-color: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-            margin-top: 20px;
-            position: relative;
-        }
-
-        .disco-container {
-            display: flex;
-            justify-content: center;
-            margin: 10px 0 20px 0;
-        }
-
-        .disco {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background: conic-gradient(#3498db, #9b59b6, #e74c3c, #f1c40f);
-            position: relative;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2), 
-                        0 0 30px rgba(0, 0, 0, 0.1) inset;
-        }
-
-        .ponteiro {
-            position: absolute;
-            width: 4px;
-            height: 90px;
-            background-color: black;
-            top: 10px;
-            left: 50%;
-            transform-origin: bottom;
-            transform: rotate(0deg);
-            border-radius: 2px;
-        }
-
-        input, select, button {
-            margin: 8px 0;
-            width: 100%;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-        }
-
-        button {
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        .start {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .start:hover {
-            background-color: #218838;
-        }
-
-        .stop {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .stop:hover {
-            background-color: #c82333;
-        }
-
-        #popup {
-            display: none;
-            position: absolute;
-            top: 50px;
-            right: 10px;
-            background-color: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            z-index: 10;
-        }
-
-        #popup p, #popup ul {
-            text-align: left;
-            margin: 0 0 10px;
-        }
-
-        .help-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 24px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .help-button:hover {
-            background-color: #0056b3;
-        }
-
-        #error-percentage-result {
-            color: black;
-        }
-
-        .error-high {
-            color: red;
-            font-weight: bold;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadastro de Serviços</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #f0f4f8;
+    margin: 0;
+    padding: 20px;
+  }
+  .container {
+    max-width: 1200px;
+    margin: auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    padding: 30px 40px;
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2c3e50;
+    font-weight: 700;
+  }
+  .form-group {
+    margin-bottom: 18px;
+    flex: 1;
+    min-width: 200px;
+  }
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #34495e;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1em;
+    border: 1.8px solid #ccc;
+    border-radius: 8px;
+    transition: border-color 0.3s ease;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  textarea {
+    resize: vertical;
+  }
+  .row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    margin: 8px 10px 8px 0;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 5px 12px rgba(0, 123, 255, 0.4);
+    transition: background-color 0.3s, box-shadow 0.3s;
+  }
+  button:hover {
+    background: #0056b3;
+    box-shadow: 0 7px 16px rgba(0, 86, 179, 0.6);
+  }
+  button:active {
+    transform: scale(0.97);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 30px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  }
+  th {
+    background: #007bff;
+    color: #fff;
+    padding: 12px;
+    position: sticky;
+    top: 0;
+  }
+  td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+  }
+  tbody tr:nth-child(even) {
+    background: #f9f9f9;
+  }
+  tbody tr:hover {
+    background: #e6f0ff;
+  }
+  @media (max-width: 700px) {
+    .row {
+      flex-direction: column;
+    }
+    table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
+  .success {
+    background-color: #28a745;
+  }
+</style>
 </head>
 <body>
 
-    <div class="container">
-        <button class="help-button" onclick="togglePopup()">?</button>
+<div class="container">
+  <h2>Cadastro de Serviços</h2>
 
-        <div id="popup">
-            <p><strong>Instruções:</strong></p>
-            <ul>
-                <li>Selecione o tipo de medidor (Monofásico, Bifásico ou Trifásico).</li>
-                <li>Preencha <strong>Tensão (V)</strong>, <strong>Corrente(s) (A)</strong>, <strong>Kd (Wh/volta)</strong>, <strong>Nº Voltas</strong> e <strong>Tempo (s)</strong>.</li>
-                <li>Clique em <strong>"Iniciar Disco"</strong> para simular a rotação.</li>
-                <li>Use o <strong>"Temporizador"</strong> para cronometrar o tempo.</li>
-                <li>Verifique os resultados com <strong>"Calcular"</strong>.</li>
-                <li>Use <strong>"Parar Disco"</strong> para interromper a animação.</li>
-            </ul>
-            <button class="help-button" onclick="togglePopup()">×</button>
-        </div>
+  <div id="formulario"></div>
 
-        <h1>SIMULADOR DE MEDIDOR DE ENERGIA</h1>
+  <div>
+    <button onclick="pegarLatLon()" aria-label="Obter Latitude e Longitude">📍 Localizar</button>
+    <button onclick="pegarEndereco()" aria-label="Obter endereço">🏠 Buscar Endereço</button>
+    <button onclick="salvar()" aria-label="Salvar serviço">💾 Salvar</button>
+    <button onclick="limparFormulario()" aria-label="Limpar formulário">🧹 Limpar</button>
+  </div>
 
-        <div class="disco-container">
-            <div class="disco" id="disco">
-                <div class="ponteiro" id="ponteiro"></div>
-            </div>
-        </div>
+  <table id="tabela">
+    <thead>
+      <tr>
+        <th>Endereço</th>
+        <th>Número</th>
+        <th>Bairro</th>
+        <th>Tronco</th>
+        <th>Chave</th>
+        <th>Qtd</th>
+        <th>Alimentador</th>
+        <th>Obs</th>
+        <th>Data</th>
+        <th>Equipe</th>
+        <th>Matrícula</th>
+        <th>EA</th>
+        <th>Serviço</th>
+        <th>Lat</th>
+        <th>Lon</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
-        <form id="calculation-form">
-            <select id="medidor" onchange="updateInputs()">
-                <option value="mono">Monofásico</option>
-                <option value="bifasico">Bifásico</option>
-                <option value="trifasico">Trifásico</option>
-            </select>
+<script>
+const campos = [
+  ['Endereço do Serviço', 'endereco'],
+  ['Número', 'numero'],
+  ['Bairro', 'bairro'],
+  ['Tronco ou Ramal', 'tronco'],
+  ['Chave', 'chave'],
+  ['Quantidade', 'qtd', 'number'],
+  ['Alimentador', 'alimentador'],
+  ['Observação', 'obs', 'textarea'],
+  ['Data', 'data', 'date'],
+  ['Equipe', 'equipe'],
+  ['Matrícula', 'matricula'],
+  ['EA', 'ea'],
+  ['Latitude', 'latitude', 'text', true],
+  ['Longitude', 'longitude', 'text', true]
+];
 
-            <input type="number" id="volts" placeholder="Tensão (V)" step="0.1" required>
-            <input type="number" id="current" placeholder="Corrente (I1)" step="0.1" required>
-            <div id="additional-currents"></div>
+const formulario = document.getElementById('formulario');
+campos.forEach(([label, id, tipo = 'text', readonly = false]) => {
+  const div = document.createElement('div');
+  div.className = 'form-group';
+  div.innerHTML = `
+    <label for="${id}">${label}</label>
+    ${tipo === 'textarea'
+      ? `<textarea id="${id}" ${readonly ? 'readonly' : ''}></textarea>`
+      : `<input type="${tipo}" id="${id}" ${readonly ? 'readonly' : ''}/>`
+    }
+  `;
+  formulario.appendChild(div);
+});
 
-            <input type="number" id="turns" placeholder="Nº Voltas" step="1" required>
-            <input type="number" id="kd" placeholder="Kd (Wh/volta)" step="0.01" required>
-            <input type="number" id="time" placeholder="Tempo (s)" step="1" required>
+// Serviço (select)
+const divServico = document.createElement('div');
+divServico.className = 'form-group';
+divServico.innerHTML = `
+  <label for="servico">Serviço (Selecione um ou mais)</label>
+  <select id="servico" multiple size="6">
+    <option value="PC">Poda primária completa - PC</option>
+    <option value="PS">Poda secundária completa - PS</option>
+    <option value="PP">Poda primária parcial - PP</option>
+    <option value="SP">Poda secundária parcial - SP</option>
+    <option value="U">Cruzeta urgente troca em 15 dias - U</option>
+    <option value="CV">Corte de cerca viva - CV</option>
+    <option value="A">Cruzeta alta para 90 dias - A</option>
+  </select>
+`;
+formulario.appendChild(divServico);
 
-            <button type="button" class="start" onclick="startStopTimer()">Temporizador</button>
-            <button type="button" class="start" onclick="startDisco()">Iniciar Disco</button>
-            <button type="button" class="stop" onclick="stopDisco()">Parar Disco</button>
-            <button type="button" class="stop" onclick="calculate()">Calcular</button>
-        </form>
+let dados = JSON.parse(localStorage.getItem('dadosServicos')) || [];
 
-        <div id="results">
-            <h2>Resultados</h2>
-            <p><strong>VA:</strong> <span id="va-result"></span></p>
-            <p><strong>Watts:</strong> <span id="watt-result"></span></p>
-            <p><strong>Fator de Potência:</strong> <span id="pf-result"></span></p>
-            <p><strong>Erro:</strong> <span id="error-percentage-result"></span></p>
-        </div>
-    </div>
+function pegarLatLon() {
+  if (!navigator.geolocation) {
+    alert('Geolocalização não suportada.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+  }, err => alert('Erro ao obter localização: ' + err.message));
+}
 
-    <script>
-        let startTime, timerInterval, animationFrame;
-        let tempoPorVolta, rotation = 0;
+function pegarEndereco() {
+  const endereco = document.getElementById('endereco').value;
+  const numero = document.getElementById('numero').value;
+  const bairro = document.getElementById('bairro').value;
+  const query = [endereco, numero, bairro].filter(Boolean).join(', ');
+  if (!query) {
+    alert('Preencha endereço, número ou bairro.');
+    return;
+  }
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.length) return alert('Endereço não encontrado.');
+      document.getElementById('latitude').value = parseFloat(data[0].lat).toFixed(6);
+      document.getElementById('longitude').value = parseFloat(data[0].lon).toFixed(6);
+    });
+}
 
-        function togglePopup() {
-            const popup = document.getElementById('popup');
-            popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
-        }
+function salvar() {
+  const endereco = document.getElementById('endereco').value.trim();
+  if (!endereco) {
+    alert('Endereço é obrigatório.');
+    return;
+  }
+  const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
+  if (!servicosSelecionados.length) {
+    alert('Selecione pelo menos um serviço.');
+    return;
+  }
+  const item = {
+    id: Date.now(),
+    ...Object.fromEntries(campos.map(([, id]) => [id, document.getElementById(id).value.trim()])),
+    servicos: servicosSelecionados
+  };
+  dados.push(item);
+  localStorage.setItem('dadosServicos', JSON.stringify(dados));
+  atualizarTabela();
+  limparFormulario();
+}
 
-        const ponteiro = document.getElementById('ponteiro');
+function limparFormulario() {
+  campos.forEach(([, id]) => document.getElementById(id).value = '');
+  document.getElementById('servico').selectedIndex = -1;
+}
 
-        function startStopTimer() {
-            const timeInput = document.getElementById('time');
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                const elapsed = Math.floor((new Date() - startTime) / 1000);
-                timeInput.value = elapsed;
-                timerInterval = null;
-            } else {
-                startTime = new Date();
-                timerInterval = setInterval(() => {
-                    const elapsed = Math.floor((new Date() - startTime) / 1000);
-                    timeInput.value = elapsed;
-                }, 1000);
-            }
-        }
+function atualizarTabela() {
+  const tbody = document.querySelector('#tabela tbody');
+  tbody.innerHTML = '';
+  dados.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.endereco}</td>
+      <td>${item.numero}</td>
+      <td>${item.bairro}</td>
+      <td>${item.tronco}</td>
+      <td>${item.chave}</td>
+      <td>${item.qtd}</td>
+      <td>${item.alimentador}</td>
+      <td>${item.obs}</td>
+      <td>${item.data}</td>
+      <td>${item.equipe}</td>
+      <td>${item.matricula}</td>
+      <td>${item.ea}</td>
+      <td>${item.servicos.join(', ')}</td>
+      <td>${item.latitude}</td>
+      <td>${item.longitude}</td>
+      <td><button onclick="excluir(${item.id})">🗑️</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
-        function calculate() {
-            const volts = parseFloat(document.getElementById('volts').value);
-            let current = parseFloat(document.getElementById('current').value);
-            const medidor = document.getElementById('medidor').value;
-            const kd = parseFloat(document.getElementById('kd').value);
-            const turns = parseFloat(document.getElementById('turns').value);
-            const time = parseFloat(document.getElementById('time').value);
+function excluir(id) {
+  if (!confirm('Deseja realmente excluir?')) return;
+  dados = dados.filter(item => item.id !== id);
+  localStorage.setItem('dadosServicos', JSON.stringify(dados));
+  atualizarTabela();
+}
 
-            // Validação de entradas
-            if (isNaN(volts) || isNaN(current) || isNaN(kd) || isNaN(turns) || isNaN(time)) {
-                alert("Preencha todos os campos corretamente!");
-                return;
-            }
-            if (medidor === 'bifasico' && isNaN(parseFloat(document.getElementById('current2').value))) {
-                alert("Preencha a corrente I2 para o modo bifásico!");
-                return;
-            }
-            if (medidor === 'trifasico' && (isNaN(parseFloat(document.getElementById('current2').value)) || 
-                                            isNaN(parseFloat(document.getElementById('current3').value)))) {
-                alert("Preencha as correntes I2 e I3 para o modo trifásico!");
-                return;
-            }
-
-            // Cálculo da potência aparente (VA)
-            let va;
-            if (medidor === 'bifasico') {
-                const current2 = parseFloat(document.getElementById('current2').value);
-                va = volts * (current + current2);
-            } else if (medidor === 'trifasico') {
-                const current2 = parseFloat(document.getElementById('current2').value);
-                const current3 = parseFloat(document.getElementById('current3').value);
-                va = Math.sqrt(3) * volts * (current + current2 + current3);
-            } else {
-                va = volts * current;
-            }
-
-            // Cálculo da potência ativa (W)
-            const watts = (turns * kd) / (time / 3600);
-
-            // Cálculo da energia esperada e registrada (kWh)
-            const energiaEsperada = (va * time) / 3600000; // VA * s / (3600 * 1000) = kWh
-            const energiaRegistrada = (turns * kd) / 1000; // Wh / 1000 = kWh
-
-            // Cálculo do fator de potência
-            const pf = Math.min(Math.max(watts / va, 0), 1);
-
-            // Cálculo do erro percentual
-            const errorPercentage = ((Math.abs(energiaRegistrada - energiaEsperada) / energiaEsperada) * 100).toFixed(2);
-
-            // Exibição dos resultados
-            document.getElementById('va-result').innerText = va.toFixed(0) + ' VA';
-            document.getElementById('watt-result').innerText = watts.toFixed(0) + ' W';
-            document.getElementById('pf-result').innerText = pf.toFixed(3);
-            document.getElementById('error-percentage-result').innerText = errorPercentage + '%';
-
-            // Destacar erro alto
-            const errorElement = document.getElementById('error-percentage-result');
-            if (parseFloat(errorPercentage) > 2) {
-                errorElement.classList.add('error-high');
-            } else {
-                errorElement.classList.remove('error-high');
-            }
-        }
-
-        function animateDisco() {
-            const elapsedTime = (Date.now() - startTime) / 1000;
-            rotation = -(360 * elapsedTime * 1000) / tempoPorVolta; // Rotação no sentido anti-horário
-            ponteiro.style.transform = `rotate(${rotation}deg)`;
-            animationFrame = requestAnimationFrame(animateDisco);
-        }
-
-        function startDisco() {
-            const volts = parseFloat(document.getElementById('volts').value);
-            let current = parseFloat(document.getElementById('current').value);
-            const kd = parseFloat(document.getElementById('kd').value);
-            const medidor = document.getElementById('medidor').value;
-
-            // Validação de entradas
-            if (isNaN(volts) || isNaN(current) || isNaN(kd)) {
-                alert("Preencha Tensão, Corrente e Kd corretamente!");
-                return;
-            }
-            if (medidor === 'bifasico' && isNaN(parseFloat(document.getElementById('current2').value))) {
-                alert("Preencha a corrente I2 para o modo bifásico!");
-                return;
-            }
-            if (medidor === 'trifasico' && (isNaN(parseFloat(document.getElementById('current2').value)) || 
-                                            isNaN(parseFloat(document.getElementById('current3').value)))) {
-                alert("Preencha as correntes I2 e I3 para o modo trifásico!");
-                return;
-            }
-
-            // Cálculo da potência (kW)
-            let kw;
-            if (medidor === 'bifasico') {
-                const current2 = parseFloat(document.getElementById('current2').value);
-                kw = (volts * (current + current2)) / 1000;
-            } else if (medidor === 'trifasico') {
-                const current2 = parseFloat(document.getElementById('current2').value);
-                const current3 = parseFloat(document.getElementById('current3').value);
-                kw = (Math.sqrt(3) * volts * (current + current2 + current3)) / 1000;
-            } else {
-                kw = (volts * current) / 1000;
-            }
-
-            if (kw === 0) {
-                alert("A potência calculada é zero! Verifique os valores inseridos.");
-                return;
-            }
-
-            tempoPorVolta = (3600 * kd) / kw;
-            startTime = Date.now();
-            animateDisco();
-        }
-
-        function stopDisco() {
-            cancelAnimationFrame(animationFrame);
-        }
-
-        function updateInputs() {
-            const medidor = document.getElementById('medidor').value;
-            const additionalCurrents = document.getElementById('additional-currents');
-            additionalCurrents.innerHTML = '';
-            if (medidor === 'bifasico') {
-                additionalCurrents.innerHTML = `<input type="number" id="current2" placeholder="Corrente (I2)" step="0.1" required>`;
-            } else if (medidor === 'trifasico') {
-                additionalCurrents.innerHTML = `
-                    <input type="number" id="current2" placeholder="Corrente (I2)" step="0.1" required>
-                    <input type="number" id="current3" placeholder="Corrente (I3)" step="0.1" required>`;
-            }
-        }
-    </script>
+atualizarTabela();
+</script>
 
 </body>
 </html>
