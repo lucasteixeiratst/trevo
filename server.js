@@ -7,40 +7,79 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Configuração do banco de dados
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // Ex.: postgresql://root:SEU_PASSWORD@dpg-d0r555be5dus73fkf9s0-a.oregon-postgres.render.com/dbtrevopoda
+  connectionString: process.env.DATABASE_URL, // postgresql://root:YhFjnT3ZhTGF89Oc7TuuA8R9I3WapTnt@dpg-d0r555be5dus73fkf9s0-a.oregon-postgres.render.com/dbtrevopoda
   ssl: { rejectUnauthorized: false }
+});
+
+// Testar conexão com o banco ao iniciar
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('Erro ao conectar ao banco:', err.message);
+    return;
+  }
+  console.log('Conectado ao banco com sucesso');
+  release();
 });
 
 // Criar tabela servicos
 app.post('/create-table', async (req, res) => {
   const createTableQuery = `
     CREATE TABLE IF NOT EXISTS servicos (
-        id BIGINT PRIMARY KEY,
-        endereco VARCHAR(255) NOT NULL,
-        numero VARCHAR(50),
-        bairro VARCHAR(100),
-        tronco VARCHAR(100),
-        chave VARCHAR(50),
-        qtd INTEGER,
-        alimentador VARCHAR(100),
-        obs TEXT,
-        data DATE,
-        equipe VARCHAR(100),
-        matricula VARCHAR(50),
-        ea VARCHAR(50),
-        servicos TEXT[],
-        latitude DECIMAL(9,6),
-        longitude DECIMAL(9,6),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id BIGINT PRIMARY KEY,
+      endereco VARCHAR(255) NOT NULL,
+      numero VARCHAR(50),
+      bairro VARCHAR(255),
+      tronco VARCHAR(100),
+      chave VARCHAR(50),
+      qtd INTEGER,
+      alimentador VARCHAR(100),
+      obs TEXT,
+      data TEXT,
+      equipe VARCHAR(100),
+      matricula VARCHAR(50),
+      ea VARCHAR(50),
+      servicos TEXT[],
+      latitude DECIMAL(9,6),
+      longitude DECIMAL(9,6),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
   try {
+    console.log('Executando query para criar tabela...');
     await pool.query(createTableQuery);
+    console.log('Tabela criada ou já existente.');
     res.status(201).json({ message: 'Tabela servicos criada com sucesso' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao criar tabela: ' + err.message });
+    console.error('Erro ao criar tabela:', err.message, err.stack);
+    res.status(500).json({ error: `Erro ao criar tabela: ${err.message}` });
+  }
+});
+
+// Visualizar estrutura da tabela
+app.get('/table-structure', async (req, res) => {
+  const structureQuery = `
+    SELECT 
+      column_name,
+      data_type,
+      CASE 
+        WHEN is_nullable = 'NO' THEN 'NOT NULL'
+        WHEN column_name = 'id' THEN 'PRIMARY KEY'
+        ELSE ''
+      END AS constraints
+    FROM information_schema.columns
+    WHERE table_name = 'servicos'
+    ORDER BY ordinal_position;
+  `;
+  try {
+    console.log('Consultando estrutura da tabela...');
+    const result = await pool.query(structureQuery);
+    console.log('Estrutura obtida:', result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao consultar estrutura:', err.message, err.stack);
+    res.status(500).json({ error: `Erro ao consultar estrutura: ${err.message}` });
   }
 });
 
@@ -50,8 +89,8 @@ app.get('/servicos', async (req, res) => {
     const result = await pool.query('SELECT * FROM servicos ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao listar serviços: ' + err.message });
+    console.error('Erro ao listar serviços:', err.message);
+    res.status(500).json({ error: 'Erro ao carregar serviços: ' + err.message });
   }
 });
 
@@ -68,7 +107,7 @@ app.post('/servicos', async (req, res) => {
     );
     res.status(201).json({ message: 'Registro salvo com sucesso' });
   } catch (err) {
-    console.error(err);
+    console.error('Erro ao salvar serviço:', err.message);
     res.status(500).json({ error: 'Erro ao salvar: ' + err.message });
   }
 });
@@ -93,7 +132,7 @@ app.put('/servicos/:id', async (req, res) => {
       res.json({ message: 'Registro atualizado com sucesso' });
     }
   } catch (err) {
-    console.error(err);
+    console.error('Erro ao atualizar serviço:', err.message);
     res.status(500).json({ error: 'Erro ao atualizar: ' + err.message });
   }
 });
@@ -109,7 +148,7 @@ app.delete('/servicos/:id', async (req, res) => {
       res.json({ message: 'Registro excluído com sucesso' });
     }
   } catch (err) {
-    console.error(err);
+    console.error('Erro ao excluir serviço:', err.message);
     res.status(500).json({ error: 'Erro ao excluir: ' + err.message });
   }
 });
