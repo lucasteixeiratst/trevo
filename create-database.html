@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Criar Banco de Dados</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 600px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      padding: 30px;
+      text-align: center;
+    }
+    h2 {
+      color: #2c3e50;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 5px 12px rgba(0, 123, 255, 0.4);
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background: #0056b3;
+      box-shadow: 0 7px 16px rgba(0, 86, 179, 0.6);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      color: #fff;
+      display: none;
+    }
+    .success {
+      background-color: #28a745;
+    }
+    .error {
+      background-color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Criar Tabela no Banco de Dados</h2>
+    <p>Clique no botão abaixo para criar a tabela <code>servicos</code> no banco <code>dbtrevopoda</code>.</p>
+    <button onclick="criarTabela()" aria-label="Criar tabela no banco de dados">Criar Tabela</button>
+    <div id="status" aria-live="assertive"></div>
+  </div>
+
+  <script>
+    const BASE_URL = 'https://trevo-xylq.onrender.com';
+
+    function showStatus(message, type) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = type;
+      status.style.display = 'block';
+      setTimeout(() => status.style.display = 'none', 5000);
+    }
+
+    async function criarTabela() {
+      const button = document.querySelector('button');
+      button.disabled = true;
+      showStatus('Criando tabela...', 'success');
+
+      try {
+        const response = await fetch(`${BASE_URL}/create-table`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+        const result = await response.json();
+        showStatus(result.message || 'Tabela criada com sucesso!', 'success');
+      } catch (err) {
+        showStatus(`Erro ao criar tabela: ${err.message}`, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
