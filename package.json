@@ -2,4 +2,14 @@
   "name": "trevo-poda-backend",
   "version": "1.0.0",
   "main": "server.js",
-  "scripts":
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo 'No build required'"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "pg": "^8.7.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0"
+  }
+}
