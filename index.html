@@ -1,134 +1,149 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cadastro de Serviços</title>
-<style>
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background: #f0f4f8;
-    margin: 0;
-    padding: 20px;
-  }
-  .container {
-    max-width: 1200px;
-    margin: auto;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-    padding: 30px 40px;
-  }
-  h2 {
-    text-align: center;
-    margin-bottom: 30px;
-    color: #2c3e50;
-    font-weight: 700;
-  }
-  .form-group {
-    margin-bottom: 18px;
-    flex: 1;
-    min-width: 200px;
-  }
-  label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 600;
-    color: #34495e;
-  }
-  input, select, textarea {
-    width: 100%;
-    padding: 12px 14px;
-    font-size: 1em;
-    border: 1.8px solid #ccc;
-    border-radius: 8px;
-    transition: border-color 0.3s ease;
-  }
-  input:focus, select:focus, textarea:focus {
-    border-color: #007bff;
-    outline: none;
-  }
-  textarea {
-    resize: vertical;
-  }
-  .row {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  button {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    margin: 8px 10px 8px 0;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 5px 12px rgba(0, 123, 255, 0.4);
-    transition: background-color 0.3s, box-shadow 0.3s;
-  }
-  button:hover {
-    background: #0056b3;
-    box-shadow: 0 7px 16px rgba(0, 86, 179, 0.6);
-  }
-  button:active {
-    transform: scale(0.97);
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 30px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.05);
-  }
-  th {
-    background: #007bff;
-    color: #fff;
-    padding: 12px;
-    position: sticky;
-    top: 0;
-  }
-  td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-  }
-  tbody tr:nth-child(even) {
-    background: #f9f9f9;
-  }
-  tbody tr:hover {
-    background: #e6f0ff;
-  }
-  @media (max-width: 700px) {
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastro de Serviços</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      padding: 30px 40px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+      font-weight: 700;
+    }
+    .form-group {
+      margin-bottom: 18px;
+      flex: 1;
+      min-width: 200px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #34495e;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 1em;
+      border: 1.8px solid #ccc;
+      border-radius: 8px;
+      transition: border-color 0.3s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+    textarea {
+      resize: vertical;
+    }
     .row {
-      flex-direction: column;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 8px 10px 8px 0;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 5px 12px rgba(0, 123, 255, 0.4);
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background: #0056b3;
+      box-shadow: 0 7px 16px rgba(0, 86, 179, 0.6);
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
     }
     table {
-      display: block;
-      overflow-x: auto;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
-  }
-  .success {
-    background-color: #28a745;
-  }
-</style>
+    th {
+      background: #007bff;
+      color: #fff;
+      padding: 12px;
+      position: sticky;
+      top: 0;
+    }
+    td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    tbody tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    tbody tr:hover {
+      background: #e6f0ff;
+    }
+    #status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      color: #fff;
+    }
+    .success {
+      background-color: #28a745;
+    }
+    .error {
+      background-color: #dc3545;
+    }
+    @media (max-width: 700px) {
+      .row {
+        flex-direction: column;
+      }
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
 </head>
 <body>
 
 <div class="container">
   <h2>Cadastro de Serviços</h2>
 
-  <div id="formulario"></div>
+  <div id="formulario" class="row"></div>
 
   <div>
     <button onclick="pegarLatLon()" aria-label="Obter Latitude e Longitude">📍 Localizar</button>
-    <button onclick="pegarEndereco()" aria-label="Obter endereço">🏠 Buscar Endereço</button>
+    <button onclick="pegarEndereco()" aria-label="Obter endereço via geolocalização">🏠 Buscar Endereço</button>
     <button onclick="salvar()" aria-label="Salvar serviço">💾 Salvar</button>
     <button onclick="limparFormulario()" aria-label="Limpar formulário">🧹 Limpar</button>
   </div>
+
+  <div id="status" aria-live="assertive" style="display: none;"></div>
 
   <table id="tabela">
     <thead>
@@ -156,6 +171,8 @@
 </div>
 
 <script>
+const BASE_URL = 'https://seu-backend.render.com'; // Substitua pela URL do seu backend
+
 const campos = [
   ['Endereço do Serviço', 'endereco'],
   ['Número', 'numero'],
@@ -180,8 +197,8 @@ campos.forEach(([label, id, tipo = 'text', readonly = false]) => {
   div.innerHTML = `
     <label for="${id}">${label}</label>
     ${tipo === 'textarea'
-      ? `<textarea id="${id}" ${readonly ? 'readonly' : ''}></textarea>`
-      : `<input type="${tipo}" id="${id}" ${readonly ? 'readonly' : ''}/>`
+      ? `<textarea id="${id}" ${readonly ? 'readonly' : ''} aria-label="${label}"></textarea>`
+      : `<input type="${tipo}" id="${id}" ${readonly ? 'readonly' : ''} aria-label="${label}" />`
     }
   `;
   formulario.appendChild(div);
@@ -192,7 +209,7 @@ const divServico = document.createElement('div');
 divServico.className = 'form-group';
 divServico.innerHTML = `
   <label for="servico">Serviço (Selecione um ou mais)</label>
-  <select id="servico" multiple size="6">
+  <select id="servico" multiple size="6" aria-label="Seleção de serviços">
     <option value="PC">Poda primária completa - PC</option>
     <option value="PS">Poda secundária completa - PS</option>
     <option value="PP">Poda primária parcial - PP</option>
@@ -204,96 +221,226 @@ divServico.innerHTML = `
 `;
 formulario.appendChild(divServico);
 
-let dados = JSON.parse(localStorage.getItem('dadosServicos')) || [];
+let lastGeolocationCall = 0;
+const debounceDelay = 1000; // 1 segundo
 
+// Função para sanitizar entradas
+function sanitizeInput(input) {
+  const div = document.createElement('div');
+  div.textContent = input;
+  return div.innerHTML;
+}
+
+// Função para exibir mensagens de status
+function showStatus(message, type) {
+  const status = document.getElementById('status');
+  status.textContent = message;
+  status.className = type;
+  status.style.display = 'block';
+  setTimeout(() => status.style.display = 'none', 5000);
+}
+
+// Função para obter coordenadas
 function pegarLatLon() {
+  if (Date.now() - lastGeolocationCall < debounceDelay) {
+    showStatus('Aguarde antes de tentar novamente.', 'error');
+    return;
+  }
+  lastGeolocationCall = Date.now();
+
   if (!navigator.geolocation) {
-    alert('Geolocalização não suportada.');
+    showStatus('Geolocalização não suportada pelo seu navegador.', 'error');
     return;
   }
-  navigator.geolocation.getCurrentPosition(pos => {
-    document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
-    document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
-  }, err => alert('Erro ao obter localização: ' + err.message));
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+      showStatus('Coordenadas obtidas com sucesso!', 'success');
+    },
+    err => {
+      showStatus('Erro ao obter localização: ' + err.message, 'error');
+    }
+  );
 }
 
+// Função para obter endereço via geolocalização
 function pegarEndereco() {
-  const endereco = document.getElementById('endereco').value;
-  const numero = document.getElementById('numero').value;
-  const bairro = document.getElementById('bairro').value;
-  const query = [endereco, numero, bairro].filter(Boolean).join(', ');
-  if (!query) {
-    alert('Preencha endereço, número ou bairro.');
+  if (Date.now() - lastGeolocationCall < debounceDelay) {
+    showStatus('Aguarde antes de tentar novamente.', 'error');
     return;
   }
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (!data.length) return alert('Endereço não encontrado.');
-      document.getElementById('latitude').value = parseFloat(data[0].lat).toFixed(6);
-      document.getElementById('longitude').value = parseFloat(data[0].lon).toFixed(6);
-    });
+  lastGeolocationCall = Date.now();
+
+  if (!navigator.onLine) {
+    showStatus('Sem conexão com a internet. Insira o endereço manualmente.', 'error');
+    document.getElementById('endereco').focus();
+    return;
+  }
+  if (!navigator.geolocation) {
+    showStatus('Geolocalização não suportada. Insira o endereço manualmente.', 'error');
+    document.getElementById('endereco').focus();
+    return;
+  }
+
+  showStatus('Buscando endereço...', 'success');
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+
+      fetch(url, {
+        headers: { 'User-Agent': 'CadastroServicos/1.0 (contato@exemplo.com)' }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          const address = data.address || {};
+          const rua = sanitizeInput(address.road || address.street || '');
+          const numero = sanitizeInput(address.housenumber || '');
+          const bairro = sanitizeInput(address.suburb || address.neighbourhood || '');
+          const cidade = sanitizeInput(address.city || address.town || address.village || '');
+
+          document.getElementById('endereco').value = rua ? `${rua}${cidade ? ', ' + cidade : ''}` : '';
+          document.getElementById('numero').value = numero;
+          document.getElementById('bairro').value = bairro;
+          document.getElementById('latitude').value = lat.toFixed(6);
+          document.getElementById('longitude').value = lon.toFixed(6);
+
+          showStatus('Endereço obtido com sucesso!', 'success');
+          document.getElementById('endereco').focus();
+        })
+        .catch(err => {
+          showStatus(`Erro ao buscar endereço: ${err.message}. Insira manualmente.`, 'error');
+          document.getElementById('endereco').focus();
+        });
+    },
+    err => {
+      showStatus('Erro ao obter localização: ' + err.message + '. Insira manualmente.', 'error');
+      document.getElementById('endereco').focus();
+    }
+  );
 }
 
-function salvar() {
+// Função para salvar os dados no backend
+async function salvar() {
   const endereco = document.getElementById('endereco').value.trim();
-  if (!endereco) {
-    alert('Endereço é obrigatório.');
-    return;
-  }
+  const qtd = document.getElementById('qtd').value.trim();
+  const data = document.getElementById('data').value;
   const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
-  if (!servicosSelecionados.length) {
-    alert('Selecione pelo menos um serviço.');
+
+  if (!endereco) {
+    showStatus('Endereço é obrigatório.', 'error');
     return;
   }
+  if (!servicosSelecionados.length) {
+    showStatus('Selecione pelo menos um serviço.', 'error');
+    return;
+  }
+  if (qtd && (isNaN(qtd) || qtd < 0)) {
+    showStatus('Quantidade deve ser um número positivo.', 'error');
+    return;
+  }
+  if (data && new Date(data) > new Date()) {
+    showStatus('A data não pode ser futura.', 'error');
+    return;
+  }
+
   const item = {
     id: Date.now(),
-    ...Object.fromEntries(campos.map(([, id]) => [id, document.getElementById(id).value.trim()])),
+    ...Object.fromEntries(campos.map(([, id]) => [id, sanitizeInput(document.getElementById(id).value.trim())])),
     servicos: servicosSelecionados
   };
-  dados.push(item);
-  localStorage.setItem('dadosServicos', JSON.stringify(dados));
-  atualizarTabela();
-  limparFormulario();
+
+  try {
+    const response = await fetch(`${BASE_URL}/servicos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item)
+    });
+    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+    atualizarTabela();
+    limparFormulario();
+    showStatus('Registro salvo com sucesso!', 'success');
+  } catch (err) {
+    showStatus(`Erro ao salvar: ${err.message}`, 'error');
+  }
 }
 
+// Função para limpar o formulário
 function limparFormulario() {
   campos.forEach(([, id]) => document.getElementById(id).value = '');
   document.getElementById('servico').selectedIndex = -1;
+  document.getElementById('endereco').focus();
 }
 
-function atualizarTabela() {
-  const tbody = document.querySelector('#tabela tbody');
-  tbody.innerHTML = '';
-  dados.forEach(item => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${item.endereco}</td>
-      <td>${item.numero}</td>
-      <td>${item.bairro}</td>
-      <td>${item.tronco}</td>
-      <td>${item.chave}</td>
-      <td>${item.qtd}</td>
-      <td>${item.alimentador}</td>
-      <td>${item.obs}</td>
-      <td>${item.data}</td>
-      <td>${item.equipe}</td>
-      <td>${item.matricula}</td>
-      <td>${item.ea}</td>
-      <td>${item.servicos.join(', ')}</td>
-      <td>${item.latitude}</td>
-      <td>${item.longitude}</td>
-      <td><button onclick="excluir(${item.id})">🗑️</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
+// Função para atualizar a tabela
+async function atualizarTabela() {
+  try {
+    const response = await fetch(`${BASE_URL}/servicos`);
+    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+    const dados = await response.json();
+
+    const tbody = document.querySelector('#tabela tbody');
+    tbody.innerHTML = '';
+    dados.forEach(item => {
+      const tr = document.createElement('tr');
+      const cells = [
+        item.endereco,
+        item.numero,
+        item.bairro,
+        item.tronco,
+        item.chave,
+        item.qtd,
+        item.alimentador,
+        item.obs,
+        item.data,
+        item.equipe,
+        item.matricula,
+        item.ea,
+        item.servicos.join(', '),
+        item.latitude,
+        item.longitude
+      ];
+
+      cells.forEach(cell => {
+        const td = document.createElement('td');
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
+
+      const actionTd = document.createElement('td');
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = '🗑️';
+      deleteButton.setAttribute('aria-label', 'Excluir este registro');
+      deleteButton.onclick = () => excluir(item.id);
+      actionTd.appendChild(deleteButton);
+      tr.appendChild(actionTd);
+
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    showStatus(`Erro ao carregar dados: ${err.message}`, 'error');
+  }
 }
 
-function excluir(id) {
+// Função para excluir um registro
+async function excluir(id) {
   if (!confirm('Deseja realmente excluir?')) return;
-  dados = dados.filter(item => item.id !== id);
-  localStorage.setItem('dadosServicos', JSON.stringify(dados));
-  atualizarTabela();
+  try {
+    const response = await fetch(`${BASE_URL}/servicos/${id}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+    atualizarTabela();
+    showStatus('Registro excluído com sucesso!', 'success');
+  } catch (err) {
+    showStatus(`Erro ao excluir: ${err.message}`, 'error');
+  }
 }
 
 atualizarTabela();
