@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gerenciamento de Tabela</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      padding: 30px;
+    }
+    h2, h3 {
+      text-align: center;
+      color: #2c3e50;
+      font-weight: 700;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #34495e;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      transition: border-color 0.3s ease;
+    }
+    input:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 5px 10px rgba(0, 123, 255, 0.4);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background: #0056b3;
+      box-shadow: 0 7px 14px rgba(0, 86, 179, 0.6);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      color: #fff;
+      display: none;
+      text-align: center;
+    }
+    .success {
+      background-color: #28a745;
+    }
+    .error {
+      background-color: #dc3545;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal-content input {
+      margin: 10px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th {
+      background: #007bff;
+      color: #fff;
+      padding: 12px;
+    }
+    td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    tbody tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    tbody tr:hover {
+      background: #e6f0ff;
+    }
+    @media (max-width: 700px) {
+      .container {
+        padding: 20px;
+      }
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Gerenciamento de Tabela</h2>
+
+  <div id="loginArea">
+    <button onclick="openAdminModal()" aria-label="Acessar área de administrador">🔑 Acessar Administração</button>
+  </div>
+
+  <div id="adminArea" style="display: none;">
+    <h3>Gerenciar Tabela <code>servicos</code></h3>
+    <button onclick="criarTabela()" aria-label="Criar tabela no banco de dados">Criar Tabela</button>
+    <button onclick="visualizarEstrutura()" aria-label="Visualizar estrutura da tabela">Visualizar Estrutura</button>
+    <button onclick="logout()" aria-label="Sair da área de administrador">Sair</button>
+  </div>
+
+  <div id="status" aria-live="assertive"></div>
+
+  <div id="tableStructure" style="display: none;">
+    <h3>Estrutura da Tabela</h3>
+    <table id="structureTable">
+      <thead>
+        <tr>
+          <th>Coluna</th>
+          <th>Tipo</th>
+          <th>Restrições</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="adminModal" class="modal">
+  <div class="modal-content">
+    <h3>Área de Administrador</h3>
+    <div class="form-group">
+      <label for="adminUser">Usuário</label>
+      <input type="text" id="adminUser" placeholder="Usuário" aria-label="Usuário administrador">
+    </div>
+    <div class="form-group">
+      <label for="adminPass">Senha</label>
+      <input type="password" id="adminPass" placeholder="Senha" aria-label="Senha administrador">
+    </div>
+    <button onclick="loginAdmin()" aria-label="Entrar como administrador">Entrar</button>
+    <button onclick="closeAdminModal()" aria-label="Fechar modal">Fechar</button>
+  </div>
+</div>
+
+<script>
+const BASE_URL = 'https://trevo-xylq.onrender.com';
+let isAdmin = false;
+
+const ADMIN_USER = 'root';
+const ADMIN_PASS = '2012412';
+
+function showStatus(message, type) {
+  const status = document.getElementById('status');
+  status.textContent = message;
+  status.className = type;
+  status.style.display = 'block';
+  setTimeout(() => status.style.display = 'none', 5000);
+}
+
+function openAdminModal() {
+  document.getElementById('adminModal').style.display = 'flex';
+  document.getElementById('adminUser').focus();
+}
+
+function closeAdminModal() {
+  document.getElementById('adminModal').style.display = 'none';
+  document.getElementById('adminUser').value = '';
+  document.getElementById('adminPass').value = '';
+}
+
+function loginAdmin() {
+  const user = document.getElementById('adminUser').value;
+  const pass = document.getElementById('adminPass').value;
+  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    isAdmin = true;
+    closeAdminModal();
+    document.getElementById('loginArea').style.display = 'none';
+    document.getElementById('adminArea').style.display = 'block';
+    showStatus('Login realizado com sucesso!', 'success');
+  } else {
+    showStatus('Usuário ou senha incorretos.', 'error');
+  }
+}
+
+function logout() {
+  isAdmin = false;
+  document.getElementById('adminArea').style.display = 'none';
+  document.getElementById('tableStructure').style.display = 'none';
+  document.getElementById('loginArea').style.display = 'block';
+  showStatus('Logout realizado.', 'success');
+}
+
+async function criarTabela() {
+  if (!isAdmin) {
+    showStatus('Acesso negado. Faça login como administrador.', 'error');
+    return;
+  }
+  const button = document.querySelector('#adminArea button[onclick="criarTabela()"]');
+  button.disabled = true;
+  showStatus('Criando tabela...', 'success');
+
+  try {
+    const response = await fetch(`${BASE_URL}/create-table`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const text = await response.text();
+    console.log('Resposta do servidor (create-table):', text);
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status} - ${text}`);
+    }
+    const result = JSON.parse(text);
+    showStatus(result.message || 'Tabela criada com sucesso!', 'success');
+  } catch (err) {
+    console.error('Erro ao criar tabela:', err.message);
+    showStatus(`Erro ao criar tabela: ${err.message}`, 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function visualizarEstrutura() {
+  if (!isAdmin) {
+    showStatus('Acesso negado. Faça login como administrador.', 'error');
+    return;
+  }
+  const button = document.querySelector('#adminArea button[onclick="visualizarEstrutura()"]');
+  button.disabled = true;
+  showStatus('Carregando estrutura da tabela...', 'success');
+
+  try {
+    const response = await fetch(`${BASE_URL}/table-structure`);
+    const text = await response.text();
+    console.log('Resposta do servidor (table-structure):', text);
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status} - ${text}`);
+    }
+    const columns = JSON.parse(text);
+    if (columns.length === 0) {
+      showStatus('Tabela não encontrada. Crie a tabela primeiro.', 'error');
+      document.getElementById('tableStructure').style.display = 'none';
+      return;
+    }
+
+    const tbody = document.querySelector('#structureTable tbody');
+    tbody.innerHTML = '';
+    columns.forEach(col => {
+      const tr = document.createElement('tr');
+      const nameTd = document.createElement('td');
+      nameTd.textContent = col.column_name;
+      const typeTd = document.createElement('td');
+      typeTd.textContent = col.data_type;
+      const constraintsTd = document.createElement('td');
+      constraintsTd.textContent = col.constraints || '-';
+      tr.appendChild(nameTd);
+      tr.appendChild(typeTd);
+      tr.appendChild(constraintsTd);
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('tableStructure').style.display = 'block';
+    showStatus('Estrutura da tabela carregada com sucesso!', 'success');
+  } catch (err) {
+    console.error('Erro ao visualizar estrutura:', err.message);
+    showStatus(`Erro ao carregar estrutura: ${err.message}`, 'error');
+    document.getElementById('tableStructure').style.display = 'none';
+  } finally {
+    button.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
