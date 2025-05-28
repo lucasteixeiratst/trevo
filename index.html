@@ -11,7 +11,7 @@
     body {
       font-family: 'Segoe UI', Tahoma, sans-serif;
       background: #f0f4f8;
-      margin: 0;
+      margin: 20px;
       padding: 20px;
     }
     .container {
@@ -20,7 +20,7 @@
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-      padding: 30px 40px;
+      padding: 30px;
     }
     h2 {
       text-align: center;
@@ -41,9 +41,9 @@
     }
     input, select, textarea {
       width: 100%;
-      padding: 12px 14px;
-      font-size: 1em;
-      border: 1.8px solid #ccc;
+      padding: 12px;
+      font-size: 16px;
+      border: 1.5px solid #ccc;
       border-radius: 8px;
       transition: border-color 0.3s ease;
     }
@@ -53,6 +53,7 @@
     }
     textarea {
       resize: vertical;
+      min-height: 80px;
     }
     .row {
       display: flex;
@@ -68,15 +69,12 @@
       border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 5px 12px rgba(0, 123, 255, 0.4);
-      transition: background-color 0.3s, box-shadow 0.3s;
+      box-shadow: 0 5px 10px rgba(0, 123, 255, 0.4);
+      transition: background 0.3s, box-shadow 0.3s;
     }
     button:hover:not(:disabled) {
       background: #0056b3;
-      box-shadow: 0 7px 16px rgba(0, 86, 179, 0.6);
-    }
-    button:active {
-      transform: scale(0.97);
+      box-shadow: 0 7px 14px rgba(0, 86, 179, 0.6);
     }
     button:disabled {
       background: #ccc;
@@ -111,6 +109,7 @@
       padding: 10px;
       border-radius: 8px;
       color: #fff;
+      display: none;
     }
     .success {
       background-color: #28a745;
@@ -161,6 +160,7 @@
   <h2>Cadastro de Serviços</h2>
 
   <div style="text-align: right; margin-bottom: 20px;">
+    <a href="/admin.html" style="margin-right: 10px; color: #007bff; text-decoration: none;">Gerenciar Tabela</a>
     <button onclick="openAdminModal()" aria-label="Acessar área de administrador">🔑 Área de Administrador</button>
   </div>
 
@@ -173,7 +173,7 @@
     <button onclick="limparFormulario()" aria-label="Limpar formulário">🧹 Limpar</button>
   </div>
 
-  <div id="status" aria-live="assertive" style="display: none;"></div>
+  <div id="status" aria-live="assertive"></div>
 
   <table id="tabela">
     <thead>
@@ -236,12 +236,10 @@ const campos = [
   ['Quantidade', 'qtd', 'number'],
   ['Alimentador', 'alimentador'],
   ['Observação', 'obs', 'textarea'],
-  ['Data', 'data', 'date'],
-  ['Equipe', 'equipe'],
-  ['Matrícula', 'matricula'],
-  ['EA', 'ea'],
-  ['Latitude', 'latitude', 'text', true],
-  ['Longitude', 'longitude', 'text', true]
+  ['Data', 'data'],
+  ['Equipe', 'POST'],
+  ['Equipamento', 'EQUIPMENT'],
+  ['Estado', 'Estado']
 ];
 
 const formulario = document.getElementById('formulario');
@@ -258,7 +256,6 @@ campos.forEach(([label, id, tipo = 'text', readonly = false]) => {
   formulario.appendChild(div);
 });
 
-// Serviço (select)
 const divServico = document.createElement('div');
 divServico.className = 'form-group';
 divServico.innerHTML = `
@@ -268,9 +265,9 @@ divServico.innerHTML = `
     <option value="PS">Poda secundária completa - PS</option>
     <option value="PP">Poda primária parcial - PP</option>
     <option value="SP">Poda secundária parcial - SP</option>
-    <option value="U">Cruzeta urgente troca em 15 dias - U</option>
+    <option value="U">Urgente troca em 48 horas - U</option>
     <option value="CV">Corte de cerca viva - CV</option>
-    <option value="A">Cruzeta alta para 90 dias - A</option>
+    <option value="A">Acessar alta tensão - A</option>
   </select>
 `;
 formulario.appendChild(divServico);
@@ -335,132 +332,113 @@ async function criarTabela() {
       headers: { 'Content-Type': 'application/json' }
     });
     const text = await response.text();
-    console.log('Resposta do servidor:', text);
+    console.log('Resposta do servidor (create-table):', text);
     if (!response.ok) {
       throw new Error(`Erro HTTP: ${response.status} - ${text}`);
     }
     const result = JSON.parse(text);
     showStatus(result.message || 'Tabela criada com sucesso!', 'success');
   } catch (err) {
-    console.error('Erro no frontend:', err.message);
+    console.error('Erro ao criar tabela:', err);
     showStatus(`Erro ao criar tabela: ${err.message}`, 'error');
   } finally {
     button.disabled = false;
   }
 }
 
-function pegarLatLon() {
-  if (Date.now() - lastGeolocationCall < debounceDelay) {
-    showStatus('Aguarde antes de tentar novamente.', 'error');
-    return;
-  }
+function limparFormulario() {
+  campos.forEach(([_, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('servico').selectedIndex = -1;
+  editId = null;
+  document.getElementById('salvarBtn').textContent = '💾 Salvar';
+  showStatus('Formulário limpo.', 'success');
+}
+
+async function pegarLatLon() {
+  if (Date.now() - lastGeolocationCall < debounceDelay) return;
   lastGeolocationCall = Date.now();
 
   if (!navigator.geolocation) {
-    showStatus('Geolocalização não suportada pelo seu navegador.', 'error');
+    showStatus('Geolocalização não suportada pelo navegador.', 'error');
     return;
   }
+
   navigator.geolocation.getCurrentPosition(
     pos => {
       document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
       document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
-      showStatus('Coordenadas obtidas com sucesso!', 'success');
+      showStatus('Localização obtida com sucesso!', 'success');
     },
     err => {
-      showStatus('Erro ao obter localização: ' + err.message, 'error');
-    }
+      console.error('Erro de geolocalização:', err);
+      showStatus(`Erro ao obter localização: ${err.message}`, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 }
 
-function pegarEndereco() {
-  if (Date.now() - lastGeolocationCall < debounceDelay) {
-    showStatus('Aguarde antes de tentar novamente.', 'error');
-    return;
-  }
+async function pegarEndereco() {
+  if (Date.now() - lastGeolocationCall < debounceDelay) return;
   lastGeolocationCall = Date.now();
 
-  if (!navigator.onLine) {
-    showStatus('Sem conexão com a internet. Insira o endereço manualmente.', 'error');
-    document.getElementById('endereco').focus();
-    return;
-  }
   if (!navigator.geolocation) {
-    showStatus('Geolocalização não suportada. Insira o endereço manualmente.', 'error');
-    document.getElementById('endereco').focus();
+    showStatus('Geolocalização não suportada pelo navegador.', 'error');
     return;
   }
-
-  showStatus('Buscando endereço...', 'success');
 
   navigator.geolocation.getCurrentPosition(
-    pos => {
+    async pos => {
       const lat = pos.coords.latitude;
       const lon = pos.coords.longitude;
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
-
-      fetch(url, {
-        headers: { 'User-Agent': 'CadastroServicos/1.0 (lucas.teixeira.tst@hotmail.com)' }
-      })
-        .then(res => {
-          if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
-          return res.json();
-        })
-        .then(data => {
-          const address = data.address || {};
-          const rua = sanitizeInput(address.road || address.street || '');
-          const numero = sanitizeInput(address.housenumber || '');
-          const bairro = sanitizeInput(address.suburb || address.neighbourhood || '');
-          const cidade = sanitizeInput(address.city || address.town || address.village || '');
-
-          document.getElementById('endereco').value = rua ? `${rua}${cidade ? ', ' + cidade : ''}` : '';
-          document.getElementById('numero').value = numero;
-          document.getElementById('bairro').value = bairro;
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const data = await response.json();
+        if (data.address) {
+          document.getElementById('endereco').value = data.address.road || '';
+          document.getElementById('numero').value = data.address.house_number || '';
+          document.getElementById('bairro').value = data.address.suburb || data.address.neighbourhood || '';
           document.getElementById('latitude').value = lat.toFixed(6);
           document.getElementById('longitude').value = lon.toFixed(6);
-
           showStatus('Endereço obtido com sucesso!', 'success');
-          document.getElementById('endereco').focus();
-        })
-        .catch(err => {
-          showStatus(`Erro ao buscar endereço: ${err.message}. Insira manualmente.`, 'error');
-          document.getElementById('endereco').focus();
-        });
+        } else {
+          showStatus('Endereço não encontrado.', 'error');
+        }
+      } catch (err) {
+        console.error('Erro ao buscar endereço:', err);
+        showStatus('Erro ao buscar endereço.', 'error');
+      }
     },
     err => {
-      showStatus('Erro ao obter localização: ' + err.message + '. Insira manualmente.', 'error');
-      document.getElementById('endereco').focus();
-    }
+      console.error('Erro de geolocalização:', err);
+      showStatus(`Erro ao obter localização: ${err.message}`, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 }
 
 async function salvar() {
-  const endereco = document.getElementById('endereco').value.trim();
-  const qtd = document.getElementById('qtd').value.trim();
-  const data = document.getElementById('data').value;
-  const servicosSelecionados = Array.from(document.getElementById('servico').selectedOptions).map(opt => opt.text);
+  const salvarBtn = document.getElementById('salvarBtn');
+  salvarBtn.disabled = true;
 
-  if (!endereco) {
-    showStatus('Endereço é obrigatório.', 'error');
-    return;
-  }
-  if (!servicosSelecionados.length) {
-    showStatus('Selecione pelo menos um serviço.', 'error');
-    return;
-  }
-  if (qtd && (isNaN(qtd) || qtd < 0)) {
-    showStatus('Quantidade deve ser um número positivo.', 'error');
-    return;
-  }
-  if (data && new Date(data) > new Date()) {
-    showStatus('A data não pode ser futura.', 'error');
+  const data = {};
+  campos.forEach(([_, id]) => {
+    const el = document.getElementById(id);
+    if (el) data[id] = sanitizeInput(el.value);
+  });
+
+  const servicoSelect = document.getElementById('servico');
+  data.servicos = Array.from(servicoSelect.selectedOptions).map(opt => opt.value);
+
+  if (!data.endereco || !data.qtd || !data.servicos.length) {
+    showStatus('Preencha os campos obrigatórios: Endereço, Quantidade e Serviço.', 'error');
+    salvarBtn.disabled = false;
     return;
   }
 
-  const item = {
-    id: editId || Date.now(),
-    ...Object.fromEntries(campos.map(([, id]) => [id, sanitizeInput(document.getElementById(id).value.trim())])),
-    servicos: servicosSelecionados
-  };
+  data.id = editId || Date.now();
 
   try {
     const method = editId ? 'PUT' : 'POST';
@@ -468,105 +446,118 @@ async function salvar() {
     const response = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item)
+      body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-    await atualizarTabela();
+    const text = await response.text();
+    console.log('Resposta do servidor (salvar):', text);
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status} - ${text}`);
+    }
+    const result = JSON.parse(text);
+    showStatus(result.message || 'Registro salvo com sucesso!', 'success');
     limparFormulario();
-    showStatus(editId ? 'Registro atualizado com sucesso!' : 'Registro salvo com sucesso!', 'success');
-    editId = null;
-    document.getElementById('salvarBtn').textContent = '💾 Salvar';
+    await carregarDados();
   } catch (err) {
-    showStatus(`Erro ao ${editId ? 'atualizar' : 'salvar'}: ${err.message}`, 'error');
+    console.error('Erro ao salvar:', err);
+    showStatus(`Erro ao salvar: ${err.message}`, 'error');
+  } finally {
+    salvarBtn.disabled = false;
   }
 }
 
-function limparFormulario() {
-  campos.forEach(([, id]) => document.getElementById(id).value = '');
-  document.getElementById('servico').selectedIndex = -1;
-  editId = null;
-  document.getElementById('salvarBtn').textContent = '💾 Salvar';
-  document.getElementById('endereco').focus();
-}
-
-async function atualizarTabela() {
+async function carregarDados() {
   try {
     const response = await fetch(`${BASE_URL}/servicos`);
-    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-    const dados = await response.json();
-
+    const text = await response.text();
+    console.log('Resposta do servidor (servicos):', text);
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status} - ${text}`);
+    }
+    const data = JSON.parse(text);
     const tbody = document.querySelector('#tabela tbody');
     tbody.innerHTML = '';
-    dados.forEach(item => {
+    data.forEach(item => {
       const tr = document.createElement('tr');
-      const cells = [
-        item.endereco,
-        item.numero,
-        item.bairro,
-        item.tronco,
-        item.chave,
-        item.qtd,
-        item.alimentador,
-        item.obs,
-        item.data,
-        item.equipe,
-        item.matricula,
-        item.ea,
-        item.servicos.join(', '),
-        item.latitude,
-        item.longitude
-      ];
-
-      cells.forEach(cell => {
-        const td = document.createElement('td');
-        td.textContent = cell;
-        tr.appendChild(td);
-      });
-
-      const actionTd = document.createElement('td');
-      const editButton = document.createElement('button');
-      editButton.textContent = '✏️';
-      editButton.setAttribute('aria-label', 'Editar este registro');
-      editButton.onclick = () => {
-        editId = item.id;
-        campos.forEach(([, id]) => document.getElementById(id).value = item[id] || '');
-        const select = document.getElementById('servico');
-        Array.from(select.options).forEach(opt => opt.selected = item.servicos.includes(opt.text));
-        document.getElementById('salvarBtn').textContent = '💾 Atualizar';
-        document.getElementById('endereco').focus();
-      };
-      actionTd.appendChild(editButton);
-
-      const deleteButton = document.createElement('button');
-      deleteButton.textContent = '🗑️';
-      deleteButton.setAttribute('aria-label', 'Excluir este registro');
-      deleteButton.onclick = () => excluir(item.id);
-      actionTd.appendChild(deleteButton);
-
-      tr.appendChild(actionTd);
+      tr.innerHTML = `
+        <td>${sanitizeInput(item.endereco)}</td>
+        <td>${sanitizeInput(item.numero || '')}</td>
+        <td>${sanitizeInput(item.bairro || '')}</td>
+        <td>${sanitizeInput(item.tronco || '')}</td>
+        <td>${sanitizeInput(item.chave || '')}</td>
+        <td>${item.qtd || ''}</td>
+        <td>${sanitizeInput(item.alimentador || '')}</td>
+        <td>${sanitizeInput(item.obs || '')}</td>
+        <td>${sanitizeInput(item.data || '')}</td>
+        <td>${sanitizeInput(item.equipe || '')}</td>
+        <td>${sanitizeInput(item.matricula || '')}</td>
+        <td>${sanitizeInput(item.ea || '')}</td>
+        <td>${sanitizeInput(item.servicos ? item.servicos.join(', ') : '')}</td>
+        <td>${item.latitude || ''}</td>
+        <td>${item.longitude || ''}</td>
+        <td>
+          <button onclick="editar(${item.id})" aria-label="Editar serviço">✏️</button>
+          <button onclick="excluir(${item.id})" aria-label="Excluir serviço">🗑️</button>
+        </td>
+      `;
       tbody.appendChild(tr);
     });
   } catch (err) {
+    console.error('Erro ao carregar dados:', err);
     showStatus(`Erro ao carregar dados: ${err.message}`, 'error');
   }
 }
 
+async function editar(id) {
+  try {
+    const response = await fetch(`${BASE_URL}/servicos`);
+    const text = await response.text();
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status} - ${text}`);
+    }
+    const data = JSON.parse(text);
+    const item = data.find(d => d.id === id);
+    if (!item) {
+      showStatus('Registro não encontrado.', 'error');
+      return;
+    }
+    campos.forEach(([_, id]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = item[id] || '';
+    });
+    const servicoSelect = document.getElementById('servico');
+    Array.from(servicoSelect.options).forEach(opt => {
+      opt.selected = item.servicos && item.servicos.includes(opt.value);
+    });
+    editId = id;
+    document.getElementById('salvarBtn').textContent = '💾 Atualizar';
+    showStatus('Editando registro.', 'success');
+  } catch (err) {
+    console.error('Erro ao editar:', err);
+    showStatus(`Erro ao editar: ${err.message}`, 'error');
+  }
+}
+
 async function excluir(id) {
-  if (!confirm('Deseja realmente excluir?')) return;
+  if (!confirm('Deseja excluir este registro?')) return;
   try {
     const response = await fetch(`${BASE_URL}/servicos/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-    await atualizarTabela();
-    showStatus('Registro excluído com sucesso!', 'success');
+    const text = await response.text();
+    console.log('Resposta do servidor (excluir):', text);
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status} - ${text}`);
+    }
+    const result = JSON.parse(text);
+    showStatus(result.message || 'Registro excluído com sucesso!', 'success');
+    await carregarDados();
   } catch (err) {
+    console.error('Erro ao excluir:', err);
     showStatus(`Erro ao excluir: ${err.message}`, 'error');
   }
 }
 
-atualizarTabela();
+carregarDados();
 </script>
-
 </body>
 </html>
