@@ -9,14 +9,15 @@ app.use(express.json());
 
 // Configuração do banco de dados
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // postgresql://root:YhFjnT3ZhTGF89Oc7TuuA8R9I3WapTnt@dpg-d0r555be5dus73fkf9s0-a.oregon-postgres.render.com/dbtrevopoda
-  ssl: { rejectUnauthorized: false }
+  connectionString: 'postgresql://root:YhFjnT3ZhTGF89Oc7TuuA8R9I3WapTnt@dpg-d0r555be5dus73fkf9s0-a/dbtrevopoda',
+  ssl: true
 });
 
 // Testar conexão com o banco ao iniciar
 pool.connect((err, client, release) => {
   if (err) {
     console.error('Erro ao conectar ao banco:', err.message);
+    throw err;
     return;
   }
   console.log('Conectado ao banco com sucesso');
@@ -53,7 +54,7 @@ app.post('/create-table', async (req, res) => {
     res.status(201).json({ message: 'Tabela servicos criada com sucesso' });
   } catch (err) {
     console.error('Erro ao criar tabela:', err.message, err.stack);
-    res.status(500).json({ error: `Erro ao criar tabela: ${err.message}` });
+    res.status(500).json({ error: 'Erro ao criar tabela: ${err.message} });
   }
 });
 
@@ -75,7 +76,7 @@ app.get('/table-structure', async (req, res) => {
   try {
     console.log('Consultando estrutura da tabela...');
     const result = await pool.query(structureQuery);
-    console.log('Estrutura obtida:', result.rows);
+    console.log('Estrutura retornada:', result.rows);
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao consultar estrutura:', err.message, err.stack);
@@ -87,7 +88,7 @@ app.get('/table-structure', async (req, res) => {
 app.get('/servicos', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM servicos ORDER BY created_at DESC');
-    res.json(result.rows);
+    res.json(result);
   } catch (err) {
     console.error('Erro ao listar serviços:', err.message);
     res.status(500).json({ error: 'Erro ao carregar serviços: ' + err.message });
@@ -98,12 +99,12 @@ app.get('/servicos', async (req, res) => {
 app.post('/servicos', async (req, res) => {
   const {
     id, endereco, numero, bairro, tronco, chave, qtd, alimentador, obs, data, equipe, matricula, ea, servicos, latitude, longitude
-  } = req.body;
+    } = req.body;
   try {
     await pool.query(
       `INSERT INTO servicos (id, endereco, numero, bairro, tronco, chave, qtd, alimentador, obs, data, equipe, matricula, ea, servicos, latitude, longitude)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-      [id, endereco, numero, bairro, tronco, chave, qtd, alimentador, obs, data, equipe, matricula, ea, servicos, latitude, longitude]
+      ([id, endereco, numero, bairro, tronco, chave, qtd, alimentador, obs, data, equipe, matricula, ea, servicos, latitude, longitude])
     );
     res.status(201).json({ message: 'Registro salvo com sucesso' });
   } catch (err) {
@@ -116,20 +117,21 @@ app.post('/servicos', async (req, res) => {
 app.put('/servicos/:id', async (req, res) => {
   const { id } = req.params;
   const {
-    endereco, numero, bairro, tronco, chave, qtd, alimentador, obs, data, equipe, matricula, ea, servicos, latitude, longitude
-  } = req.body;
+    endereco, numero, bairro, tronco, matricula, qtd, alimentador, obs, dataDraft, equipe, matricula, ea, servicos, latitude, longitude
+    } = req.body;
   try {
     const result = await pool.query(
-      `UPDATE servicos SET
+      `UPDATE servicos SET 
          endereco = $1, numero = $2, bairro = $3, tronco = $4, chave = $5, qtd = $6, alimentador = $7, obs = $8,
          data = $9, equipe = $10, matricula = $11, ea = $12, servicos = $13, latitude = $14, longitude = $15
        WHERE id = $16`,
-      [endereco, numero, bairro, tronco, chave, qtd, alimentador, obs, data, equipe, matricula, ea, servicos, latitude, longitude, id]
+      [endereco, numero, bairro, tronco, matricula, qtd, alimentador, obs, data, equipe, matricula, ea, servicos, latitude, longitude, id]
     );
     if (result.rowCount === 0) {
+      throw new Error('Registro não encontrado');
       res.status(404).json({ error: 'Registro não encontrado' });
     } else {
-      res.json({ message: 'Registro atualizado com sucesso' });
+      res.json({ mensagem: 'Registro atualizado com sucesso' });
     }
   } catch (err) {
     console.error('Erro ao atualizar serviço:', err.message);
@@ -137,19 +139,18 @@ app.put('/servicos/:id', async (req, res) => {
   }
 });
 
-// Excluir um serviço
+// Eliminar um serviço
 app.delete('/servicos/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM servicos WHERE id = $1', [id]);
     if (result.rowCount === 0) {
-      res.status(404).json({ error: 'Registro não encontrado' });
-    } else {
-      res.json({ message: 'Registro excluído com sucesso' });
+      return res.status(404).json({ error: 'Registro não encontrado' });
     }
+    res.json({ mensagem: 'Registro eliminado com sucesso' });
   } catch (err) {
-    console.error('Erro ao excluir serviço:', err.message);
-    res.status(500).json({ error: 'Erro ao excluir: ' + err.message });
+    console.error('Erro ao eliminar serviço:', err.message);
+    res.status(500).json({ error: 'Erro ao eliminar: ' + err.message });
   }
 });
 
